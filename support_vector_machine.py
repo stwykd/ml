@@ -1,11 +1,9 @@
 import numpy as np
 from cifar10_utils import load_CIFAR10
-import matplotlib.pyplot as plt
-from random import shuffle
 
-def svm_loss_naive(W, X, y, reg):
+def svm_loss_vectorized(W, X, y, reg):
   """
-  Structured SVM loss function, naive implementation (with loops).
+  Structured SVM loss function, vectorized implementation.
   Inputs have dimension D, there are C classes, and we operate on minibatches
   of N examples.
   Inputs:
@@ -17,41 +15,6 @@ def svm_loss_naive(W, X, y, reg):
   Returns a tuple of:
   - loss as single float
   - gradient with respect to weights W; an array of same shape as W
-  """
-  dW = np.zeros(W.shape) # initialize the gradient as zero
-
-  # compute the loss and the gradient
-  num_classes = W.shape[1]
-  num_train = X.shape[0]
-  loss = 0.0
-  for i in xrange(num_train):
-    scores = X[i].dot(W)
-    correct_class_score = scores[y[i]]
-    for j in xrange(num_classes):
-      if j == y[i]:
-        continue
-      margin = scores[j] - correct_class_score + 1 # note delta = 1
-      if margin > 0:
-        loss += margin
-        dW[:, j] += X[i]  # this is only added
-        dW[:, y[i]] -= X[i]
-
-  # Right now the loss is a sum over all training examples, but we want it
-  # to be an average instead so we divide by num_train.
-  loss /= num_train
-  dW /= num_train
-
-  # Add regularization to the loss.
-  loss += 0.5 * reg * np.sum(W * W)
-  dW += reg * W
-
-  return loss, dW
-
-
-def svm_loss_vectorized(W, X, y, reg):
-  """
-  Structured SVM loss function, vectorized implementation.
-  Inputs and outputs are the same as svm_loss_naive.
   """
   C = W.shape[1]
   N = X.shape[0]
@@ -141,6 +104,7 @@ X_dev = np.hstack([X_dev, np.ones((X_dev.shape[0], 1))])
 
 
 
+
 # SVM Classifier
 
 # generate a random SVM weight matrix of small numbers
@@ -151,48 +115,12 @@ loss, grad = svm_loss_naive(W, X_dev, y_dev, 0.0)
 # Numerically compute the gradient along several randomly chosen dimensions, and
 # compare them with your analytically computed gradient. The numbers should match
 # almost exactly along all dimensions.
-from cs231n.gradient_check import grad_check_sparse
-f = lambda w: svm_loss_naive(w, X_dev, y_dev, 0.0)[0]
+from gradient_check import grad_check_sparse
+f = lambda w: svm_loss_vectorized(w, X_dev, y_dev, 0.0)[0]
 grad_numerical = grad_check_sparse(f, W, grad)
 
 # do the gradient check once again with regularization turned on
 # you didn't forget the regularization gradient did you?
-loss, grad = svm_loss_naive(W, X_dev, y_dev, 1e2)
-f = lambda w: svm_loss_naive(w, X_dev, y_dev, 1e2)[0]
+loss, grad = svm_loss_vectorized(W, X_dev, y_dev, 1e2)
+f = lambda w: svm_loss_vectorized(w, X_dev, y_dev, 1e2)[0]
 grad_numerical = grad_check_sparse(f, W, grad)
-
-# Next implement the function svm_loss_vectorized; for now only compute the loss;
-# we will implement the gradient in a moment.
-tic = time.time()
-loss_naive, grad_naive = svm_loss_naive(W, X_dev, y_dev, 0.00001)
-toc = time.time()
-print 'Naive loss: %e computed in %fs' % (loss_naive, toc - tic)
-
-tic = time.time()
-loss_vectorized, _ = svm_loss_vectorized(W, X_dev, y_dev, 0.00001)
-toc = time.time()
-print 'Vectorized loss: %e computed in %fs' % (loss_vectorized, toc - tic)
-
-# The losses should match but your vectorized implementation should be much faster.
-print 'difference: %f' % (loss_naive - loss_vectorized)
-
-# Complete the implementation of svm_loss_vectorized, and compute the gradient
-# of the loss function in a vectorized way.
-
-# The naive implementation and the vectorized implementation should match, but
-# the vectorized version should still be much faster.
-tic = time.time()
-_, grad_naive = svm_loss_naive(W, X_dev, y_dev, 0.00001)
-toc = time.time()
-print 'Naive loss and gradient: computed in %fs' % (toc - tic)
-
-tic = time.time()
-_, grad_vectorized = svm_loss_vectorized(W, X_dev, y_dev, 0.00001)
-toc = time.time()
-print 'Vectorized loss and gradient: computed in %fs' % (toc - tic)
-
-# The loss is a single number, so it is easy to compare the values computed
-# by the two implementations. The gradient on the other hand is a matrix, so
-# we use the Frobenius norm to compare them.
-difference = np.linalg.norm(grad_naive - grad_vectorized, ord='fro')
-print 'difference: %f' % difference
